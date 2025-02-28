@@ -5,6 +5,11 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.List;
 
+/**
+ * RABC(role-based access control)
+ *  用户 - 角色 - 权限
+ *  从 resources - biz - spaceUserAuthConfig.json 文件中读取权限角色列表
+ */
 @Data
 public class SpaceUserAuthConfig implements Serializable {
 

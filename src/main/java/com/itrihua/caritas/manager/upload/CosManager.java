@@ -68,11 +68,7 @@ public class CosManager {
             thumbnaiRule.setBucket(cosClientConfig.getBucket());
             String thumbnailKey = FileUtil.mainName(key) + "_thumbnail." + FileUtil.getSuffix(key);
             thumbnaiRule.setFileId(thumbnailKey);
-            thumbnaiRule.setRule(String.format("imageMogr2/thumbnail/%sx%s>",128, 128));
-//            thumbnaiRule.setRule(String.format(
-//                    "imageMogr2/thumbnail/%sx%s>/crop/%sx%s/quality/100/sharp/50/lanczos",
-//                    128, 128, 128, 128
-//            ));
+            thumbnaiRule.setRule(String.format("imageMogr2/thumbnail/%sx%s>",256, 256));
             ruleList.add(thumbnaiRule);
         }
 

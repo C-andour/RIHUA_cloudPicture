@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class MyBatisPlusConfig {
 
     /**
-     * 拦截器配置
+     * 拦截器配置 分页插件
      * @return {@link MybatisPlusInterceptor}
      */
     @Bean

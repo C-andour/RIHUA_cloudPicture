@@ -5,6 +5,9 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.List;
 
+/**
+ * 角色定义
+ */
 @Data
 public class SpaceUserRole implements Serializable {
 

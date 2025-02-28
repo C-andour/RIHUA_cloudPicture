@@ -11,26 +11,25 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * 空间权限认证：必须具有指定权限才能进入该方法
+ * 空间用户权限认证：必须具有指定权限才能进入该方法
  * <p> 可标注在函数、类上（效果等同于标注在此类的所有方法上）
  * <a>https://gitee.com/dromara/sa-token/tree/master/sa-token-demo/sa-token-demo-case/src/main/java/com/pj/satoken/merge_annotation</a>
  */
-@SaCheckPermission(type = StpKit.SPACE_TYPE)
+@SaCheckPermission(type = StpKit.SPACE_TYPE) // 对空间用户使用, 元注解标注该注解,从而实现间接复用目标注解的功能
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
-public @interface SaSpaceCheckPermission {
+@Deprecated
+public @interface SaSpaceUserCheckPermission {
 
     /**
      * 需要校验的权限码
-     *
      * @return 需要校验的权限码
      */
-    @AliasFor(annotation = SaCheckPermission.class)
+    @AliasFor(annotation = SaCheckPermission.class)  //@AliasFor 声明了 @SaSpaceUserCheckPermission 的 value 属性是 @SaCheckPermission 的 value 属性的别名。
     String[] value() default {};
 
     /**
      * 验证模式：AND | OR，默认AND
-     *
      * @return 验证模式
      */
     @AliasFor(annotation = SaCheckPermission.class)

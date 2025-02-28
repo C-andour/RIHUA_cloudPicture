@@ -1,8 +1,9 @@
-package com.itrihua.caritas.manager.auth;
+package com.itrihua.caritas.aop;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.ReflectUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.servlet.ServletUtil;
 import cn.hutool.http.ContentType;
@@ -10,6 +11,8 @@ import cn.hutool.http.Header;
 import cn.hutool.json.JSONUtil;
 import com.itrihua.caritas.exception.BusinessException;
 import com.itrihua.caritas.exception.ErrorCode;
+import com.itrihua.caritas.manager.auth.SpaceUserAuthManager;
+import com.itrihua.caritas.manager.auth.StpKit;
 import com.itrihua.caritas.manager.auth.model.SpaceUserAuthContext;
 import com.itrihua.caritas.manager.auth.model.SpaceUserPermissionConstant;
 import com.itrihua.caritas.model.entity.Picture;
@@ -24,10 +27,8 @@ import com.itrihua.caritas.service.SpaceUserService;
 import com.itrihua.caritas.service.UserService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import cn.dev33.satoken.stp.StpInterface;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import cn.hutool.core.util.ReflectUtil;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -35,12 +36,8 @@ import java.util.*;
 
 import static com.itrihua.caritas.constant.UserConstant.USER_LOGIN_STATE;
 
-/**
- * 自定义权限加载接口实现类
- */
-@Deprecated
-//@Component    // 保证此类被 SpringBoot 扫描，完成 Sa-Token 的自定义权限验证扩展
-public class StpInterfaceImpl implements StpInterface {
+@Component
+public class SpaceUserPermissionFetcher {
 
     @Value("${server.servlet.context-path}")
     private String contextPath;
@@ -61,9 +58,11 @@ public class StpInterfaceImpl implements StpInterface {
     private UserService userService;
 
     /**
-     * 返回一个账号所拥有的权限码集合 
+     *
+     * @param loginId StpKit.space中获取登录ID
+     * @param loginType StpKit.space中获取登录类型,即type
+     * @return
      */
-    @Override
     public List<String> getPermissionList(Object loginId, String loginType) {
         // 判断 loginType，仅对类型为 "space" 进行权限校验
         if (!StpKit.SPACE_TYPE.equals(loginType)) {
@@ -80,9 +79,8 @@ public class StpInterfaceImpl implements StpInterface {
         // 获取 userId , 此处无法使用 UserService.getLoginUser(request) ,因为没有参数request,需要绕一下
         User loginUser = (User) StpKit.SPACE.getSessionByLoginId(loginId).get(USER_LOGIN_STATE);
         if (loginUser == null) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "用户未登录");
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "用户未登录,无权限");
         }
-
         Long userId = loginUser.getId();
         // 优先从上下文中获取 SpaceUser 对象
         SpaceUser spaceUser = authContext.getSpaceUser();
@@ -179,11 +177,11 @@ public class StpInterfaceImpl implements StpInterface {
     /**
      * 返回一个账号所拥有的角色标识集合 (权限与角色可分开校验)
      */
-    @Override
     public List<String> getRoleList(Object loginId, String loginType) {
         List<String> list = new ArrayList<String>();
         return list;
     }
+
 
     /**
      * 从请求中获取上下文对象
@@ -221,5 +219,6 @@ public class StpInterfaceImpl implements StpInterface {
         }
         return authRequest;
     }
+
 
 }

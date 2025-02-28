@@ -1,5 +1,8 @@
 package com.itrihua.caritas.manager.auth.model;
 
+/**
+ * 角色权限 KEY
+ */
 public interface SpaceUserPermissionConstant {
     /**
      * 空间用户管理权限

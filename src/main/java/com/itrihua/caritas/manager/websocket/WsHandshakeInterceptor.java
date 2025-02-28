@@ -41,6 +41,14 @@ public class WsHandshakeInterceptor implements HandshakeInterceptor {
     @Resource
     private SpaceUserAuthManager spaceUserAuthManager;
 
+    /**
+     * 握手前的权限校验
+     * @param request
+     * @param response
+     * @param wsHandler
+     * @param attributes
+     * @return
+     */
     @Override
     public boolean beforeHandshake(@NotNull ServerHttpRequest request, @NotNull ServerHttpResponse response, @NotNull WebSocketHandler wsHandler, @NotNull Map<String, Object> attributes) {
         if (request instanceof ServletServerHttpRequest) {

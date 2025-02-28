@@ -126,7 +126,6 @@ public class SpaceController {
     @GetMapping("/get/vo")
     public BaseResponse<SpaceVO> getSpaceVOById(long id, HttpServletRequest request) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
-        log.info("id,{}",id);
         // 查询数据库
         Space Space = spaceService.getById(id);
         ThrowUtils.throwIf(Space == null, ErrorCode.NOT_FOUND_ERROR,"此处请求的空间不存在");
@@ -134,7 +133,6 @@ public class SpaceController {
         User loginUser = userService.getLoginUser(request);
         List<String> permissionList = spaceUserAuthManager.getPermissionList(Space, loginUser);
         spaceVO.setPermissionList(permissionList);
-        log.info("spaceVO,{}",spaceVO);
         // 获取封装类
         return ResultUtils.success(spaceVO);
     }

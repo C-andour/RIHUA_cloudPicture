@@ -77,7 +77,7 @@ public class Space implements Serializable {
     private Integer isDelete;
 
     /**
-     * 空间类型：0-私有 1-团队
+     * 空间类型：0-公共 1-私有 2-团队
      */
     private Integer spaceType;
 

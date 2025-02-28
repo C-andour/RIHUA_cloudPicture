@@ -2,6 +2,9 @@ package com.itrihua.caritas.common;
 
 import lombok.Data;
 
+/**
+ * 分页参数
+ */
 @Data
 public class PageRequest {
 

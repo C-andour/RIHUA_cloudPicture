@@ -12,6 +12,9 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 文件上传
+ */
 @Service
 @Slf4j
 public class MultipartFilePictureUpload extends PictureUploadTemplate {

@@ -35,25 +35,8 @@ public class SpaceUserAuthManager {
     }
 
     /**
-     * 根据角色获取权限列表
-     */
-    public List<String> getPermissionsByRole(String spaceUserRole) {
-        if (StrUtil.isBlank(spaceUserRole)) {
-            return new ArrayList<>();
-        }
-        // 找到匹配的角色
-        SpaceUserRole role = SPACE_USER_AUTH_CONFIG.getRoles().stream()
-                .filter(r -> spaceUserRole.equals(r.getKey()))
-                .findFirst()
-                .orElse(null);
-        if (role == null) {
-            return new ArrayList<>();
-        }
-        return role.getPermissions();
-    }
-
-    /**
-     * 获取权限列表
+     * 获取权限列表方法
+     * 先查询用户角色,再通过getPermissionByRole方法获取该用户角色权限列表
      */
     public List<String> getPermissionList(Space space, User loginUser) {
         if (loginUser == null) {
@@ -67,9 +50,11 @@ public class SpaceUserAuthManager {
             if (userService.isAdmin(loginUser)) {
                 return ADMIN_PERMISSIONS;
             }
-            // 登录,但是非管理员,无权限
+            // 公共图库,非管理员,无权限
             return new ArrayList<>();
         }
+
+        // 团队空间 / 私人空间
         SpaceTypeEnum spaceTypeEnum = SpaceTypeEnum.getEnumByValue(space.getSpaceType());
         if (spaceTypeEnum == null) {
             // 无空间类型,有异常,无权限
@@ -102,4 +87,22 @@ public class SpaceUserAuthManager {
         return new ArrayList<>();
     }
 
+
+    /**
+     * 根据用户角色获取权限列表
+     */
+    public List<String> getPermissionsByRole(String spaceUserRole) {
+        if (StrUtil.isBlank(spaceUserRole)) {
+            return new ArrayList<>();
+        }
+        // 找到匹配的角色
+        SpaceUserRole role = SPACE_USER_AUTH_CONFIG.getRoles().stream()
+                .filter(r -> spaceUserRole.equals(r.getKey()))
+                .findFirst()
+                .orElse(null);
+        if (role == null) {
+            return new ArrayList<>();
+        }
+        return role.getPermissions();
+    }
 }

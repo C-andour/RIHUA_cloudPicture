@@ -5,6 +5,9 @@ import lombok.Getter;
 
 import java.util.Objects;
 
+/**
+ * 用户角色枚举(公共空间)
+ */
 @Getter
 public enum UserRoleEnum {
     USER("用户","user"),

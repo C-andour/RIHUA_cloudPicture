@@ -66,13 +66,15 @@ ALTER TABLE picture
 ALTER TABLE picture
     ADD COLUMN spaceId  bigint  null comment '空间 id（为空表示公共空间）';
 
+-- 添加新列,判断图片归属
+ALTER TABLE picture
+    ADD COLUMN spaceType TINYINT NOT NULL DEFAULT 0 COMMENT '空间类型: 0-公共 1-私有 2-团队';
+
 -- 创建索引
 CREATE INDEX idx_spaceId ON picture (spaceId);
 
 ALTER TABLE picture
     ADD COLUMN picColor varchar(16) null comment '图片主色调';
-
-
 
 -- 空间表
 create table if not exists space

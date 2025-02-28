@@ -9,8 +9,15 @@ import com.itrihua.caritas.constant.UserConstant;
 import com.itrihua.caritas.exception.BusinessException;
 import com.itrihua.caritas.exception.ErrorCode;
 import com.itrihua.caritas.exception.ThrowUtils;
+import com.itrihua.caritas.manager.auth.model.SpaceUserPermission;
+import com.itrihua.caritas.manager.auth.model.SpaceUserPermissionConstant;
+import com.itrihua.caritas.manager.upload.MultipartFilePictureUpload;
+import com.itrihua.caritas.manager.upload.PictureUploadTemplate;
+import com.itrihua.caritas.model.dto.file.UploadPictureResult;
 import com.itrihua.caritas.model.dto.user.*;
+import com.itrihua.caritas.model.entity.Picture;
 import com.itrihua.caritas.model.entity.User;
+import com.itrihua.caritas.model.vo.picture.PictureVO;
 import com.itrihua.caritas.model.vo.user.LoginUserVO;
 import com.itrihua.caritas.model.vo.user.UserVO;
 import com.itrihua.caritas.service.UserService;
@@ -18,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -32,23 +40,25 @@ public class UserController {
     @Resource
     private UserService userService;
 
+    @Resource
+    private MultipartFilePictureUpload multipartFilePictureUpload;
+
     /**
      * 用户注册
      */
     @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
-        log.info("用户注册");
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
-        String userAccount = userRegisterRequest.getUserAccount();
+        String userAccount = userRegisterRequest.getUserAccount(); // userAccount即用户账号,用户邮箱
         String userPassword = userRegisterRequest.getUserPassword();
         String checkPassword = userRegisterRequest.getCheckPassword();
-        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        String tempCode = userRegisterRequest.getTempCode();
+        long result = userService.userRegister(userAccount, userPassword, checkPassword, tempCode);
         return ResultUtils.success(result);
     }
 
     /**
      * 用户登录
-     * @param userLoginRequest 用户登录请求类
      */
     @PostMapping("/login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
@@ -62,20 +72,15 @@ public class UserController {
 
     /**
      * 获取当前登录用户
-     * @param request
-     * @return
      */
     @GetMapping("/get/login")
-    public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request)  {
-        log.info("获取当前登录用户");
+    public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
         User loginUser = userService.getLoginUser(request);
         return ResultUtils.success(userService.getLoginUserVO(loginUser));
     }
 
     /**
      * 用户注销
-     * @param request
-     * @return
      */
     @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
@@ -93,15 +98,17 @@ public class UserController {
     public BaseResponse<Long> addUser(@RequestBody UserAddRequest userAddRequest) {
         log.info("创建用户");
         ThrowUtils.throwIf(userAddRequest == null, ErrorCode.PARAMS_ERROR);
+        // 复制参数
         User user = new User();
         BeanUtils.copyProperties(userAddRequest, user);
-        if (!user.getUserRole().equals(UserConstant.ADMIN_ROLE)){
+        if (!user.getUserRole().equals(UserConstant.ADMIN_ROLE)) {
             user.setUserRole(UserConstant.DEFAULT_ROLE);
         }
-        // 默认密码 12345678
+        // 默认密码 12345678 ,并加密
         final String DEFAULT_PASSWORD = "12345678";
         String encryptPassword = userService.getEncryptPassword(DEFAULT_PASSWORD);
         user.setUserPassword(encryptPassword);
+        // 保存用户
         boolean result = userService.save(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建失败");
         return ResultUtils.success(user.getId());
@@ -138,9 +145,7 @@ public class UserController {
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest) {
         log.info("删除用户");
-        if (deleteRequest == null || deleteRequest.getId() <= 0) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
+        ThrowUtils.throwIf(deleteRequest == null || deleteRequest.getId() <= 0, ErrorCode.PARAMS_ERROR);
         boolean b = userService.removeById(deleteRequest.getId());
         return ResultUtils.success(b);
     }
@@ -149,12 +154,9 @@ public class UserController {
      * 更新用户
      */
     @PostMapping("/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest) {
-        log.info("更新用户");
-        if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
+        ThrowUtils.throwIf(userUpdateRequest == null || userUpdateRequest.getId() == null, ErrorCode.PARAMS_ERROR);
+        // 复制参数
         User user = new User();
         BeanUtils.copyProperties(userUpdateRequest, user);
         boolean result = userService.updateById(user);
@@ -164,6 +166,7 @@ public class UserController {
 
     /**
      * 分页获取用户封装列表（仅管理员）
+     *
      * @param userQueryRequest 查询请求参数
      */
     @PostMapping("/list/page/vo")
@@ -171,16 +174,38 @@ public class UserController {
     public BaseResponse<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest) {
         log.info("分页获取用户封装列表");
         ThrowUtils.throwIf(userQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        long current = userQueryRequest.getCurrent();
-        long pageSize = userQueryRequest.getPageSize();
-        Page<User> userPage = userService.page(new Page<>(current, pageSize),
+        Page<User> userPage = userService.page(
+                new Page<>(userQueryRequest.getCurrent(), userQueryRequest.getPageSize()),
                 userService.getQueryWrapper(userQueryRequest));
-        Page<UserVO> userVOPage = new Page<>(current, pageSize, userPage.getTotal());
+        // 获取封装列表
         List<UserVO> userVOList = userService.getUserVOList(userPage.getRecords());
+        // 封装列表Page
+        Page<UserVO> userVOPage = new Page<>(userQueryRequest.getCurrent(), userQueryRequest.getPageSize(), userPage.getTotal());
         userVOPage.setRecords(userVOList);
+
         return ResultUtils.success(userVOPage);
     }
 
+    /**
+     * 上传用户头像
+     */
+    @PostMapping("/upload/avator")
+    public BaseResponse<PictureVO> uploadAvator(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request) {
+        ThrowUtils.throwIf(multipartFile == null,ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR);
+        PictureUploadTemplate pictureUploadTemplate = multipartFilePictureUpload;
+        String uploadPathprefix = String.format("avator/%s", loginUser.getId());
+        UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(multipartFile, uploadPathprefix);
+        PictureVO pictureVO = new PictureVO();
+        BeanUtils.copyProperties(uploadPathprefix,pictureVO);
+        String avatorUrl = uploadPictureResult.getUrl();
 
+        User oldUser = userService.getById(loginUser.getId());
+        oldUser.setUserAvatar(avatorUrl);
+        boolean save = userService.updateById(oldUser);
+        ThrowUtils.throwIf(!save,ErrorCode.SYSTEM_ERROR);
+        return ResultUtils.success(pictureVO);
+    }
 
 }

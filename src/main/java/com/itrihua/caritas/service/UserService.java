@@ -25,7 +25,7 @@ public interface UserService extends IService<User> {
      * @param checkPassword 校验密码
      * @return 新用户 id
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword);
+    long userRegister(String userAccount, String userPassword, String checkPassword, String tempCode);
 
     /**
      * 用户登录
@@ -62,21 +62,20 @@ public interface UserService extends IService<User> {
     UserVO getUserVO(User user);
 
     /**
-     * 获取脱敏的用户列表
+     * 将用户列表 转为 用户脱敏列表
      */
     List<UserVO> getUserVOList(List<User> userList);
 
     /**
-     * 获取分页条件
+     * 构造分页查询条件
      */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
 
     /**
      * 是否为管理员
-     *
-     * @param user
-     * @return
      */
     boolean isAdmin(User user);
 
 }
+
+

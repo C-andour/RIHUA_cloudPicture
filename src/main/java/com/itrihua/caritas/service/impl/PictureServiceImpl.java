@@ -25,6 +25,7 @@ import com.itrihua.caritas.model.entity.Picture;
 import com.itrihua.caritas.model.entity.Space;
 import com.itrihua.caritas.model.entity.User;
 import com.itrihua.caritas.model.enums.PictureReviewStatusEnum;
+import com.itrihua.caritas.model.enums.SpaceTypeEnum;
 import com.itrihua.caritas.model.vo.picture.PictureVO;
 import com.itrihua.caritas.model.vo.user.UserVO;
 import com.itrihua.caritas.service.PictureService;
@@ -59,9 +60,6 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     private UserService userService;
 
     @Resource
-    private FileManager fileManager;
-
-    @Resource
     private TransactionTemplate transactionTemplate;
 
     @Resource
@@ -93,13 +91,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
         // 校验空间是否存在
         Long spaceId = pictureUploadRequest.getSpaceId();
+        Integer spaceType = SpaceTypeEnum.PUBLIC.getValue(); //默认公共空间,后续更改
         if (spaceId != null) {
             Space space = spaceService.getById(spaceId);
             ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
-//            //如果存在空间,需要确保空间的所有人与当前操作用户一致
-//            if (!space.getUserId().equals(loginUser.getId())) {
-//                throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "没有空间权限");
-//            }
+            spaceType = space.getSpaceType();
             // 校验空间是否满足额度
             if (space.getTotalCount() > space.getMaxCount()) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "空间条数不足");
@@ -119,18 +115,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         if (pictureId != null) {
             Picture oldPicture = this.getById(pictureId);
             ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
-//            //仅本人 或 管理员可编辑
-//            if (!oldPicture.getUserId().equals(loginUser.getId()) || !userService.isAdmin(loginUser)) {
-//                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-//            }
-
             // 原图片存在spaceId,那么继续复用
             if (spaceId == null) {
                 if (oldPicture.getSpaceId() != null) {
                     spaceId = oldPicture.getSpaceId();
                 }
             }
-
             //如果存在spaceId,那么原有与传入必须一致
             if (spaceId != null) {
                 ThrowUtils.throwIf(!oldPicture.getSpaceId().equals(spaceId), ErrorCode.PARAMS_ERROR, "空间id不匹配");
@@ -165,6 +155,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         picture.setPicFormat(uploadPictureResult.getPicFormat());
         picture.setUserId(loginUser.getId());
         picture.setPicColor(uploadPictureResult.getPicColor()); //主色调
+        picture.setSpaceType(spaceType);
         //补充审核参数
         fillReviewParams(picture, loginUser);
         // 如果 pictureId 不为空，表示更新，否则是新增

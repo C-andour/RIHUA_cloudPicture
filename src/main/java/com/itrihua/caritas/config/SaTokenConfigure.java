@@ -1,4 +1,4 @@
-package com.itrihua.caritas.manager.auth.annotation;
+package com.itrihua.caritas.config;
 
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.strategy.SaAnnotationStrategy;
@@ -25,5 +25,6 @@ public class SaTokenConfigure implements WebMvcConfigurer {
         SaAnnotationStrategy.instance.getAnnotation = (element, annotationClass) -> {
             return AnnotatedElementUtils.getMergedAnnotation(element, annotationClass);
         };
+
     }
 }

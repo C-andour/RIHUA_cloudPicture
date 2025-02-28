@@ -9,9 +9,10 @@ import javax.servlet.http.HttpServletRequestWrapper;
 import java.io.*;
 
 /**
+ *
+ * 自定义requestWrapper,重写getInputSream方法,并将前端传来的ServletRequest 拦截,转为RequestWrapper
  * 包装请求，使 InputStream 可以重复读取
  *
- * @author pine
  */
 @Slf4j
 public class RequestWrapper extends HttpServletRequestWrapper {
