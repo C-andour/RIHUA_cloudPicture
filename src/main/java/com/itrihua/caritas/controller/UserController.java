@@ -71,6 +71,21 @@ public class UserController {
     }
 
     /**
+     * 用户重置密码
+     */
+    @PostMapping("/login/reset")
+    public BaseResponse<?> userResetPw(@RequestBody UserResetPasswordRequest userResetPasswordRequest) {
+        log.info("用户重置密码");
+        ThrowUtils.throwIf(userResetPasswordRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userResetPasswordRequest.getUserAccount(); // userAccount即用户账号,用户邮箱
+        String userPassword = userResetPasswordRequest.getUserPassword();
+        String checkPassword = userResetPasswordRequest.getCheckPassword();
+        String resetCode = userResetPasswordRequest.getResetCode();
+        Long id = userService.userResetPw(userAccount, userPassword, checkPassword, resetCode);
+        return ResultUtils.success(id);
+    }
+
+    /**
      * 获取当前登录用户
      */
     @GetMapping("/get/login")

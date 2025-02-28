@@ -33,19 +33,10 @@ public class EmailService {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
-    // 发送文本邮件
-    @Deprecated
-    public void sendVerificationCode(String toEmail, String code) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(my_mail); // 必须与配置的username一致
-        message.setTo(toEmail);
-        message.setSubject("您的验证码");
-        message.setText("您的验证码是：" + code + "，5分钟内有效");
-        mailSender.send(message);
-    }
-
-    // 发送html,验证码文件
-    public void sendHtmlEmail(String toEmail, String code) {
+    /**
+     * 注册时 验证码发送
+     */
+    public void sendHtmlEmail(String toEmail, String code, String verifyType) {
         // 发送验证码前的限制,发送大于三次,即限制
         String limitKey = "limit:" + toEmail;
         Long count = stringRedisTemplate.opsForValue().increment(limitKey);
@@ -53,13 +44,12 @@ public class EmailService {
             stringRedisTemplate.expire(limitKey, 3, TimeUnit.MINUTES); // 3分钟内只能发1次
         }
         if (count > 3) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "操作过于频繁，请稍后再试");
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "最近发送已经超过三次,操作过于频繁，请稍后再试");
         }
 
         MimeMessage message = mailSender.createMimeMessage();
-        MimeMessageHelper helper = null;
         try {
-            helper = new MimeMessageHelper(message, true);
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
             helper.setFrom(my_mail);
             helper.setTo(toEmail);
             helper.setSubject("验证码通知");
@@ -70,7 +60,7 @@ public class EmailService {
             /**
              * 使用redis存储code,5分钟后清除
              */
-            String key = "code:" + toEmail;
+            String key = verifyType + "Code:" + toEmail;
             ValueOperations<String, String> valueOps = stringRedisTemplate.opsForValue();
             valueOps.set(key, code, 5, TimeUnit.MINUTES);
 
@@ -84,8 +74,8 @@ public class EmailService {
     /**
      * 验证临时验证码是否正确
      */
-    public void verifiyTempCode(String userEmail, String tempCode) {
-        String key = "code:" + userEmail;
+    public void verifiyTempCode(String userEmail, String tempCode, String verifyType) {
+        String key = verifyType + "Code:" + userEmail;
         String oldCode = stringRedisTemplate.opsForValue().get(key);
         if (!tempCode.equals(oldCode)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
@@ -94,4 +84,14 @@ public class EmailService {
         stringRedisTemplate.delete(key);
     }
 
+    // 发送文本邮件
+    @Deprecated
+    public void sendVerificationCode(String toEmail, String code) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(my_mail); // 必须与配置的username一致
+        message.setTo(toEmail);
+        message.setSubject("您的验证码");
+        message.setText("您的验证码是：" + code + "，5分钟内有效");
+        mailSender.send(message);
+    }
 }

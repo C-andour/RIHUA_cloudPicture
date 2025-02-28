@@ -57,7 +57,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // 3. 验证两次密码一致
         ThrowUtils.throwIf(!userPassword.equals(checkPassword), ErrorCode.PARAMS_ERROR, "两次密码不一致");
         // 验证已有验证码是否正确
-        emailService.verifiyTempCode(userAccount, tempCode);
+        emailService.verifiyTempCode(userAccount, tempCode, "register");
         // 4. 检查是否存在重复账号
         QueryWrapper<User> queryWrapper = new QueryWrapper<>(); //定义查询构造类(mybatis-plus)
         queryWrapper.eq("userAccount", userAccount);
@@ -102,6 +102,39 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         StpKit.SPACE.login(user.getId(),StpKit.SPACE_TYPE);  //登录与登录状态
         StpKit.SPACE.getSession().set(USER_LOGIN_STATE, user);
         return this.getLoginUserVO(user);
+    }
+
+    /**
+     * 用户重置密码
+     */
+    @Override
+    public Long userResetPw(String userAccount, String userPassword, String checkPassword, String resetCode) {
+        //  校验 账号/密码/验证码是否为空
+        ThrowUtils.throwIf(StrUtil.hasBlank(userAccount, userPassword, checkPassword, resetCode), ErrorCode.PARAMS_ERROR, "账号密码为空");
+        //  校验账号/密码过短
+        ThrowUtils.throwIf(userAccount.length() < 4, ErrorCode.PARAMS_ERROR, "用户账号过短");
+        //  验证两次密码一致
+        ThrowUtils.throwIf(!userPassword.equals(checkPassword), ErrorCode.PARAMS_ERROR, "两次密码不一致");
+        //  检查是否存在重复账号
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>(); //定义查询构造类(mybatis-plus)
+        queryWrapper.eq("userAccount", userAccount);
+        User oldUser = this.baseMapper.selectOne(queryWrapper);
+        ThrowUtils.throwIf(oldUser == null, ErrorCode.PARAMS_ERROR, "重置的账号不存在");
+        // 验证已有验证码是否正确
+        emailService.verifiyTempCode(userAccount, resetCode, "reset");
+        //  加密
+        String encryptPassword = getEncryptPassword(userPassword);
+        //  插入数据
+        User user = new User();
+        user.setId(oldUser.getId());
+        user.setUserAvatar("https://rihua-caritas-1325753913.cos.ap-guangzhou.myqcloud.com/avator/1877324709656350722/2025-02-26_7Sj3wgXmAbn6eYGX.webp");
+        user.setUserAccount(userAccount);
+        user.setUserPassword(encryptPassword);
+        user.setUserName(userAccount);
+        user.setUserRole(UserRoleEnum.USER.getValue()); // 默认角色
+        boolean updated = this.updateById(user);
+        ThrowUtils.throwIf(!updated, ErrorCode.SYSTEM_ERROR, "重置密码,数据库发生错误");
+        return user.getId();
     }
 
     /**

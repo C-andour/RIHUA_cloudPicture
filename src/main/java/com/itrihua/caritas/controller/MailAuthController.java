@@ -22,16 +22,29 @@ public class MailAuthController {
     private EmailService emailService;
 
     /**
-     * 发送邮箱验证码
+     * 发送邮箱验证码 注册时
      * @param userAccount 用户邮箱
      */
-    @GetMapping("/send-code")
+    @GetMapping("/send-code/register")
     public BaseResponse<?> sendCode(@RequestParam String userAccount) {
         String code = CodeGeneratorUtil.generateVerificationCode();
         // 校验是否为正确的邮箱格式
         String regex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"; // 邮箱格式正则表达式
         ThrowUtils.throwIf(!(userAccount != null && userAccount.matches(regex)), ErrorCode.PARAMS_ERROR, "邮箱格式错误");
-        emailService.sendHtmlEmail(userAccount, code);
+        emailService.sendHtmlEmail(userAccount, code, "register");
+        return ResultUtils.success("验证码发送成功!");
+    }
+
+    /**
+     * 发送邮箱验证码 重置密码时
+     */
+    @GetMapping("/send-code/reset")
+    public BaseResponse<?> sendResetCode(@RequestParam String userAccount) {
+        String code = CodeGeneratorUtil.generateVerificationCode();
+        // 校验是否为正确的邮箱格式
+        String regex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$"; // 邮箱格式正则表达式
+        ThrowUtils.throwIf(!(userAccount != null && userAccount.matches(regex)), ErrorCode.PARAMS_ERROR, "邮箱格式错误");
+        emailService.sendHtmlEmail(userAccount, code, "reset");
         return ResultUtils.success("验证码发送成功!");
     }
 
