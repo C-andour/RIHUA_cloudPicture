@@ -9,7 +9,11 @@ EXPOSE 8123
 # 定义启动命令
 ENTRYPOINT ["java", "-jar", "app.jar"]
 
+# 删除原有jar文件
+# rm ../rihua-caritas-backend/rihua-caritas-backend-0.0.1-SNAPSHOT.jar
+# 转移jar文件
+# mv rihua-caritas-backend-0.0.1-SNAPSHOT.jar ../rihua-caritas-backend/
 # 构建镜像命令：
 # docker build -t rihua-caritas-backend .
 # 运行镜像命令：
-# docker run -d -p 8123:8123 --name rihua-caritas-container rihua-caritas-backend
+# docker run -d -p 8123:8123 --name rihua rihua-caritas-backend

@@ -246,9 +246,6 @@ public class PictureController {
 
     /**
      * 分页获取图片列表（缓存版）
-     * @param pictureQueryRequest
-     * @param request
-     * @return
      */
     @Deprecated
     @PostMapping("/list/page/vo/cache")
@@ -354,11 +351,15 @@ public class PictureController {
     }
 
 
+    /**
+     * 获取分类与标签
+     * @return
+     */
     @GetMapping("/tag_category")
     public BaseResponse<PictureTagCategory> listPictureTagCategory() {
         PictureTagCategory pictureTagCategory = new PictureTagCategory();
-        List<String> tagList = Arrays.asList("热门", "搞笑", "生活", "高清", "艺术", "校园", "背景", "简历", "创意");
-        List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报");
+        List<String> tagList = Arrays.asList("艺术", "校园", "背景", "城市", "创意");
+        List<String> categoryList = Arrays.asList("头像", "风景作品", "摄影作品", "手机壁纸");
         pictureTagCategory.setTagList(tagList);
         pictureTagCategory.setCategoryList(categoryList);
         return ResultUtils.success(pictureTagCategory);
@@ -375,6 +376,24 @@ public class PictureController {
         User loginUser = userService.getLoginUser(request);
         pictureService.doPictureReview(pictureReviewRequest, loginUser);
         return ResultUtils.success(true);
+    }
+
+    /**
+     *  查询我的上传(用户可用)
+     */
+    @PostMapping("/list/myupload/page")
+    public BaseResponse<?> listMyUploadPictureByPage(@RequestBody PictureQueryRequest pictureQueryRequest, HttpServletRequest request) {
+        long current = pictureQueryRequest.getCurrent();
+        long size = pictureQueryRequest.getPageSize();
+        // 查询数据库
+        User loginUser = userService.getLoginUser(request);
+        if (!pictureQueryRequest.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限,只能查询与本人相关的上传数据");
+        }
+        // 查询数据库
+        Page<Picture> picturePage = pictureService.page(new Page<>(current, size),
+                pictureService. getQueryWrapper(pictureQueryRequest));
+        return ResultUtils.success(picturePage);
     }
 
 
